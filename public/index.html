@@ -1,0 +1,62 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestionnaire de Tâches</title>
+  <style>
+    body { font-family: sans-serif; max-width: 500px; margin: 40px auto; padding: 0 20px; }
+    .row { display: flex; gap: 8px; margin-bottom: 20px; }
+    input { flex: 1; padding: 8px; }
+    button { padding: 8px 14px; cursor: pointer; }
+    li { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+    .done { text-decoration: line-through; color: gray; }
+  </style>
+</head>
+<body>
+  <h2>Gestionnaire de Tâches</h2>
+  <div class="row">
+    <input id="taskInput" placeholder="Nouvelle tâche..." />
+    <button onclick="addTask()">Ajouter</button>
+  </div>
+  <ul id="taskList"></ul>
+
+  <script>
+    async function loadTasks() {
+      const res = await fetch('/api/tasks');
+      const tasks = await res.json();
+      document.getElementById('taskList').innerHTML = tasks.map(t => `
+        <li>
+          <span class="${t.completed ? 'done' : ''}" onclick="toggleTask(${t.id}, ${!t.completed})" style="cursor:pointer">
+            ${t.title}
+          </span>
+          <button onclick="deleteTask(${t.id})">Supprimer</button>
+        </li>
+      `).join('');
+    }
+    async function addTask() {
+      const input = document.getElementById('taskInput');
+      if (!input.value.trim()) return;
+      await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: input.value })
+      });
+      input.value = '';
+      loadTasks();
+    }
+    async function toggleTask(id, completed) {
+      await fetch(`/api/tasks/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completed })
+      });
+      loadTasks();
+    }
+    async function deleteTask(id) {
+      await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+      loadTasks();
+    }
+    loadTasks();
+  </script>
+</body>
+</html>
